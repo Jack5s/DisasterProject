@@ -58,7 +58,7 @@ public class ReliefWebScraper {
 				if (disaster.startYear >= Common.startYear && disaster.startYear <= Common.endYear
 						&& disaster.startMonth >= Common.startMonth && disaster.startMonth <= Common.endMonth
 						&& disaster.startDay >= Common.startDay && disaster.startDay <= Common.endDay && disaster.disasterType == Common.disasterType) {
-					SQLConnection.insertToFile(disaster, Common.reliefFileName);
+//					SQLConnection.insertToFile(disaster, Common.reliefFileName);
 				} else {
 					continue;
 				}
