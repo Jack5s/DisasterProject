@@ -94,7 +94,7 @@ public class GDACSWebAllRecordScraper {
 									&& disaster.startMonth >= Common.startMonth
 									&& disaster.startMonth <= Common.endMonth && disaster.startDay >= Common.startDay
 									&& disaster.startDay <= Common.endDay) {
-								SQLConnection.insertToFile(disaster, Common.gdacsFileName);
+//								SQLConnection.insertToFile(disaster, Common.gdacsFileName);
 							} else {
 								continue;
 							}

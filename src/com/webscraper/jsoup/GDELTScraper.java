@@ -46,6 +46,7 @@ public class GDELTScraper {
 	public GDELTScraper() throws Exception {
 		// fileToDatabase();
 		scrpeFromWeb();
+
 	}
 
 	private void scrpeFromWeb() throws Exception {
@@ -55,7 +56,7 @@ public class GDELTScraper {
 		doc = Jsoup.connect(url).maxBodySize(0).timeout(0).get();
 		StringReader stringReader = new StringReader(doc.wholeText());
 		BufferedReader bufferedReader = new BufferedReader(stringReader);
-		int i = 0;
+		// int i = 0;
 		Stack<String> dataLineStack = new Stack<>();
 		String dataLine = bufferedReader.readLine();
 		while (dataLine != null) {
@@ -65,9 +66,9 @@ public class GDELTScraper {
 		bufferedReader.close();
 		System.out.println("Stack Finished");
 
-		PrintWriter clearWriter = new PrintWriter(Common.gdeltFileName);
-		clearWriter.close();
-
+		// PrintWriter clearWriter = new PrintWriter(Common.gdeltFileName);
+		// clearWriter.close();
+		// long lineNumber = 1;
 		dataLine = dataLineStack.pop();
 		while (dataLine != null) {
 			try {
@@ -77,20 +78,23 @@ public class GDELTScraper {
 				String downloadUrl = dataArray[2];
 				String fileName = downloadUrl.substring(downloadUrl.lastIndexOf('/') + 1, downloadUrl.lastIndexOf('.'));
 
-				String timeStr = fileName.substring(0, 14);
-				Disaster disasterTime = new Disaster();
-				disasterTime.startYear = Integer.valueOf(timeStr.substring(0, 4));
-				disasterTime.startMonth = Integer.valueOf(timeStr.substring(4, 6));
-				disasterTime.startDay = Integer.valueOf(timeStr.substring(6, 8));
-				disasterTime.startHour = Integer.valueOf(timeStr.substring(8, 10));
-				disasterTime.startMinute = Integer.valueOf(timeStr.substring(10, 12));
-				if (disasterTime.startYear >= Common.startYear && disasterTime.startYear <= Common.endYear
-						&& disasterTime.startMonth >= Common.startMonth && disasterTime.startMonth <= Common.endMonth
-						&& disasterTime.startDay >= Common.startDay && disasterTime.startDay <= Common.endDay) {
-				} else {
-					dataLine = dataLineStack.pop();
-					continue;
-				}
+				// String timeStr = fileName.substring(0, 14);
+				// Disaster disasterTime = new Disaster();
+				// disasterTime.startYear = Integer.valueOf(timeStr.substring(0, 4));
+				// disasterTime.startMonth = Integer.valueOf(timeStr.substring(4, 6));
+				// disasterTime.startDay = Integer.valueOf(timeStr.substring(6, 8));
+				// disasterTime.startHour = Integer.valueOf(timeStr.substring(8, 10));
+				// disasterTime.startMinute = Integer.valueOf(timeStr.substring(10, 12));
+				// if (disasterTime.startYear >= Common.startYear && disasterTime.startYear <=
+				// Common.endYear
+				// && disasterTime.startMonth >= Common.startMonth && disasterTime.startMonth <=
+				// Common.endMonth
+				// && disasterTime.startDay >= Common.startDay && disasterTime.startDay <=
+				// Common.endDay) {
+				// } else {
+				// dataLine = dataLineStack.pop();
+				// continue;
+				// }
 
 				String[] strArray = fileName.split("\\.");
 				String fileType = strArray[1].toLowerCase();
@@ -108,41 +112,45 @@ public class GDELTScraper {
 				case "gkg":
 					downloadZIPFileName = gkgZIPDownloadPath + "/" + fileName + ".zip";
 					csvFileName = gkgCSVDownloadPath + "/" + fileName + ".csv";
-					// boolean checkFileCanInsert = SQLConnection.checkFileList(fileName);
-					boolean checkFileCanInsert = true;
+					boolean checkFileCanInsert = SQLConnection.checkFileList(fileName);
+					// boolean checkFileCanInsert = true;
 					System.out.println(fileName + ": " + checkFileCanInsert);
-
+					if(fileName.substring(0,13).compareTo("20180519043000")==0)
+					{
+						return;
+					}
 					if (checkFileCanInsert == true) {
 						boolean checkDownloadFile = downloadFile(downloadUrl, downloadZIPFileName);
-						if (checkDownloadFile == false) {
-							errorLog("Fail to download file" + downloadZIPFileName);
-						}
-						unzipFile(downloadZIPFileName, csvFileName);
-						insertGKGFileToDatabase(fileName);
+						if (checkDownloadFile == true) {
+							unzipFile(downloadZIPFileName, csvFileName);
+							insertGKGFileToDatabase(fileName);
+							SQLConnection.insertFileName(fileName);
 
-						File zipFile = new File(downloadZIPFileName);
-						boolean checkZIPFile = zipFile.delete();
-						if (checkZIPFile == false) {
-							errorLog("Fail to delete file" + downloadZIPFileName);
-						}
+							File zipFile = new File(downloadZIPFileName);
+							boolean checkZIPFile = zipFile.delete();
+							if (checkZIPFile == false) {
+								// errorLog("Fail to delete file" + downloadZIPFileName);
+							}
 
-						File csvFile = new File(gkgCSVDownloadPath + "/" + fileName + ".csv");
-						boolean checkcsvFile = csvFile.delete();
-						if (checkcsvFile == false) {
-							errorLog("Fail to delete file" + csvFileName);
+							File csvFile = new File(gkgCSVDownloadPath + "/" + fileName + ".csv");
+							boolean checkcsvFile = csvFile.delete();
+							if (checkcsvFile == false) {
+								// errorLog("Fail to delete file" + csvFileName);
+							}
 						}
-						i++;
+						// i++;
 					}
 				default:
 					break;
 				}
 
-				if (i >= maxCount) {
-					// break;
-				}
+				// if (i >= maxCount) {
+				// // break;
+				// }
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.out.println("ERROR" + e.getMessage());
+				System.out.println(dataLine);
+				errorLog(dataLine);
 			} finally {
 				dataLine = dataLineStack.pop();
 			}
@@ -191,71 +199,68 @@ public class GDELTScraper {
 		BufferedReader bufferedReader = new BufferedReader(
 				new FileReader(gkgCSVDownloadPath + "/" + gkgFileName + ".csv"));
 		String dataLine = bufferedReader.readLine();
-		int lineNumer = 1;
+		// int lineNumer = 1;
 		String totalFileName = gkgTotalCSVPath + "/" + gkgFileName + ".txt";
 		PrintWriter clearWriter = new PrintWriter(totalFileName);
 		clearWriter.close();
 
 		while (dataLine != null) {
-			try {
-				String[] dataArray = dataLine.split("\t");
-				String V1THEMES = dataArray[7].toLowerCase();
-				int[] indexArray1 = getAllIndex(V1THEMES, "natural_disaster");
+			String[] dataArray = dataLine.split("\t");
+			String V1THEMES = dataArray[7].toLowerCase();
+			int[] indexArray1 = getAllIndex(V1THEMES, "natural_disaster");
 
-				String V2ENHANCEDTHEMES = dataArray[8].toLowerCase();
-				int[] indexArray2 = getAllIndex(V2ENHANCEDTHEMES, "natural_disaster");
+			String V2ENHANCEDTHEMES = dataArray[8].toLowerCase();
+			int[] indexArray2 = getAllIndex(V2ENHANCEDTHEMES, "natural_disaster");
 
-				String V2GCAM = dataArray[17].toLowerCase();
-				int index3 = V2GCAM.indexOf("c18.156");
+			String V2GCAM = dataArray[17].toLowerCase();
+			int index3 = V2GCAM.indexOf("c18.156");
 
-				if (indexArray1.length > 0 && indexArray2.length > 0 && index3 >= 0) {
-					BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(totalFileName, true));
-					bufferedWriter.write(dataLine + "\r\n");
-					bufferedWriter.close();
+			if (indexArray1.length > 0 && indexArray2.length > 0 && index3 >= 0) {
+				BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(totalFileName, true));
+				bufferedWriter.write(dataLine + "\r\n");
+				bufferedWriter.close();
 
-					Disaster disaster = new Disaster();
-					disaster.id = dataArray[0];
-					String dateTimeStr = dataArray[1];
-					disaster.startYear = Integer.valueOf(dateTimeStr.substring(0, 4));
-					disaster.startMonth = Integer.valueOf(dateTimeStr.substring(4, 6));
-					disaster.startDay = Integer.valueOf(dateTimeStr.substring(6, 8));
-					disaster.startHour = Integer.valueOf(dateTimeStr.substring(8, 10));
-					disaster.startMinute = Integer.valueOf(dateTimeStr.substring(10, 12));
-					disaster.url = dataArray[4];
+				Disaster disaster = new Disaster();
+				disaster.id = dataArray[0];
+				String dateTimeStr = dataArray[1];
+				disaster.startYear = Integer.valueOf(dateTimeStr.substring(0, 4));
+				disaster.startMonth = Integer.valueOf(dateTimeStr.substring(4, 6));
+				disaster.startDay = Integer.valueOf(dateTimeStr.substring(6, 8));
+				disaster.startHour = Integer.valueOf(dateTimeStr.substring(8, 10));
+				disaster.startMinute = Integer.valueOf(dateTimeStr.substring(10, 12));
+				disaster.url = dataArray[4];
 
-					String locationStr = dataArray[9];
-					if (locationStr.length() > 0) {
-						String[] locationArray = locationStr.split("#");
-						String latitudeStr = locationArray[4];
-						String longitudeStr = locationArray[5];
-						if (latitudeStr.length() > 0 && longitudeStr.length() > 0) {
-							disaster.latitude = Double.valueOf(latitudeStr);
-							disaster.longitude = Double.valueOf(longitudeStr);
-						} else {
-							throw new Exception();
-						}
-					}
-					String[] disasterTypeStrArray = getDisasterTypeString(V1THEMES, indexArray1, "natural_disaster");
-					for (int i = 0; i < disasterTypeStrArray.length; i++) {
-						String disasterTypeStr = disasterTypeStrArray[i];
-						disaster.disasterType = DisasterType.getDisasterTypeFromString(disasterTypeStr);
-						if (disaster.disasterType != DisasterType.SpecialEvent) {
-							break;
-						}
-					}
-					// SQLConnection.insertTextContent(disaster.id, dataLine);
-					// SQLConnection.insert(disaster);
-					if (disaster.disasterType == Common.disasterType) {
-						SQLConnection.insertToFile(disaster, Common.gdeltFileName);
+				String locationStr = dataArray[9];
+				if (locationStr.length() > 0) {
+					String[] locationArray = locationStr.split("#");
+					String latitudeStr = locationArray[4];
+					String longitudeStr = locationArray[5];
+					if (latitudeStr.length() > 0 && longitudeStr.length() > 0) {
+						disaster.latitude = Double.valueOf(latitudeStr);
+						disaster.longitude = Double.valueOf(longitudeStr);
+					} else {
+						throw new Exception();
 					}
 				}
-			} catch (Exception e) {
-				errorLog(gkgFileName + ":Error in Line " + lineNumer);
-				return;
-			} finally {
-				dataLine = bufferedReader.readLine();
-				lineNumer++;
+				String[] disasterTypeStrArray = getDisasterTypeString(V1THEMES, indexArray1, "natural_disaster");
+				for (int i = 0; i < disasterTypeStrArray.length; i++) {
+					String disasterTypeStr = disasterTypeStrArray[i];
+					disaster.disasterType = DisasterType.getDisasterTypeFromString(disasterTypeStr);
+					if (disaster.disasterType != DisasterType.SpecialEvent) {
+						break;
+					}
+				}
+				SQLConnection.insertTextContent(disaster.id, dataLine);
+				SQLConnection.insert(disaster);
+				// if (SQLConnection.checkCanInsertFromID(disaster.id) == true) {
+				//
+				// if (disaster.disasterType == Common.disasterType) {
+				// // SQLConnection.insertToFile(disaster, Common.gdeltFileName);
+				// }
+				// }
 			}
+			dataLine = bufferedReader.readLine();
+			// lineNumer++;
 		}
 		bufferedReader.close();
 	}
